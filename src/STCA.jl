@@ -1,5 +1,16 @@
 module STCA
 
-# package code goes here
+export CellSpace, Rule
+export save, load, update!
+
+include("rule.jl")
+include("cellspace.jl")
+
+const loadfuncs = [:CellSpace=>load_cell, :Rule=>load_rule]
+function load(fname::String, typ::Symbol)
+    if haskey(loadfuncs, typ)
+        loadfuncs[typ](fname)
+    end
+end
 
 end # module
