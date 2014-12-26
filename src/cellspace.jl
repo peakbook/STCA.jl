@@ -144,3 +144,7 @@ function load_cell(fname::String)
     CellSpace(cells)
 end
 
+function get_state(cs::CellSpace, x::Integer, y::Integer, typ::Symbol)
+    eval(typ)(cs.cells[x, y])
+end
+

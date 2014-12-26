@@ -1,7 +1,7 @@
 module STCA
 
 export CellSpace, Rule
-export save, load, update!
+export save, load, update!, get_state
 
 include("rule.jl")
 include("cellspace.jl")
