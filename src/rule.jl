@@ -1,86 +1,133 @@
 
 type Rule
     dict::Dict{Uint64, (Uint64,Uint64)} # rule dictionary (fin=>(fout,rule_index))
-    states::Array{Uint8}                # states of partition
-    N::Integer                          # num of transition rules
-    Nrot::Integer                       # num of transition rules including rotational symmetry
+    states::Array{(Uint8,Uint)}         # states of partition
+    N::Uint64                           # num of transition rules
+    Nrot::Uint64                        # num of transition rules including rotational symmetry
     function Rule()
-        new(Dict{Uint64,(Uint64,Uint64)}(),(Uint8)[])
+        new(Dict{Uint64,(Uint64,Uint64)}(),(Uint8)[],0,0)
     end
 end
 
 function show(rule::Rule)
     println("num of rules            : ", rule.N)
     println("num of rules (inc. rot.): ", rule.Nrot)
+    println("num of partition states : ", length(rule.states))
+    for state in rule.states
+        println(" ",char(state[1]),": ",state[2])
+    end
 end
 
 function save(fname::String, rule::Rule)
+    ruleidx = Dict{Uint64,Bool}()
+
     open(fname, "w") do f
-        for i in rule.dict
-            write(string(tostr(i[1])," ",tostr(i[2]),"\n"))
+        for fin in keys(rule.dict)
+            if !haskey(ruleidx, rule.dict[fin][2])
+                write(f, string(tostr(fin)," ",tostr(rule.dict[fin][1]),"\n"))
+                push!(ruleidx, rule.dict[fin][2],true)
+            end
         end
     end
 end
 
 function load_rule(fname::String)
-    rule = Rule()
-    lines = nothing
-    open(fname) do f
-       lines = readlines(f) 
+    flines = open(fname) do f
+        readlines(f) 
     end
-
-    rule_idx = 0
-    for line in lines
-        # skip comment line
-        if ismatch(r"^\s*(#)",line)
-            continue
-        end
-
+    lines = String[]
+    for line in flines
         # eliminate ret code
         line = replace(line, "\n", "")
         line = replace(line, "\r", "")
+
+        # skip comment/brank line
+        if ismatch(r"^\s*(#)",line) || length(line)==0
+            continue
+        end
+
+        push!(lines, line)
+    end
+
+    load_rule(lines)
+end 
+
+function load_rule(lines::Array)
+    rule = Rule()
+
+    for line in lines
         str = split(line[1:end], ' ')
         try
             fin = toval64(str[1])
             fout = toval64(str[2])
-            if has_rotational_rule(rule.dict, fin)
-                throw(tostr(fin)) # include rotational symmetry rule
-            end
-            rule_idx += 1
-            push!(rule.dict, fin, (fout, rule_idx))
+            add_rule(rule, fin, fout)
         catch ex
+            println(ex)
             continue
         end
     end
     gen_partition_states_list(rule)
-    add_rotsym_rule(rule.dict)
-    rule.N = rule_idx
-    rule.Nrot = length(rule.dict)
 
     rule
 end
 
-function has_rotational_rule(dict::Dict, val::Uint64)
-    r1 = rotate(val)
-    r2 = rotate(r1)
-    r3 = rotate(r2)
-    haskey(dict,val)||haskey(dict, r1)||haskey(dict, r2)||haskey(dict, r3)
+function add_rule(rule::Rule, fin::Uint64, fout::Uint64)
+   rot_rules = gen_rotational_rule(fin, fout) 
+   check_rule_validity(rot_rules)
+   has_rotational_rule(rule.dict, rot_rules)
+   for r in rot_rules
+       push!(rule.dict, r[1], (r[2], rule.N))
+       rule.Nrot+=1
+   end
+   rule.N+=1
+end
+
+function gen_rotational_rule(fin::Uint64, fout::Uint64)
+    rot_rules = (Uint64,Uint64)[]
+    push!(rot_rules, (fin,fout))
+    for i=1:3
+        fin = rotate(fin)
+        fout = rotate(fout)
+        push!(rot_rules, (fin,fout))
+    end
+    unique(rot_rules)
+end
+
+function check_rule_validity(rot_rules::Array{(Uint,Uint)})
+    fins = unique(map(x->x[1],rot_rules))
+    fouts = unique(map(x->x[2],rot_rules))
+    if length(fins)<length(fouts)
+        throw(string("*caution* bad rule: ",tostr(fins[1]),"->", tostr(fouts[1])))
+    end
+end
+
+function has_rotational_rule(dict::Dict, rot_rules::Array{(Uint,Uint)})
+    for rule in rot_rules
+        if haskey(dict,rule[1])
+            throw(string("*caution* dup rule: ",tostr(rule[1]),"->",tostr(rule[2])))
+        end
+    end
 end
 
 function gen_partition_states_list(rule::Rule)
-    states = Dict{Uint8,Uint8}()
+    states = Dict{Uint8,Uint}()
     for fin in keys(rule.dict)
         fout,ridx = rule.dict[fin]
         v = (uint128(fin)<<64)|fout
         for i=0:8:120
-            elem = uint8((v>>i)&0xff)
-            push!(states, elem, elem) 
+            p = uint8((v>>i)&0xff)
+            if haskey(states, p)
+                states[p] += 1
+            else
+                push!(states, p, 1) 
+            end
         end
     end
     keylist = keys(states)
     for key in keylist
-        push!(rule.states, key)
+        push!(rule.states, (key, states[key]))
     end
+    sort!(rule.states, by=x->x[2])
 end
 
 # 0x11223344_55667788 -> 0x44112233_88556677
@@ -95,29 +142,5 @@ end
 # 0x11223344 -> 0x44112233
 function rotate(val::Uint32)
     (val>>8)|((val&0x0000_000ff)<<24)
-end
-
-function add_rotsym_rule(dict)
-    rot_rules = (Uint64,(Uint64,Uint64))[]
-    for fin in keys(dict)
-        fout, ridx = dict[fin]
-
-        tfin = fin
-        tfout = fout
-        for i=1:3
-            tfin = rotate(tfin)
-            tfout = rotate(tfout)
-            if tfin != fin
-                push!(rot_rules, (tfin, (tfout, ridx) ))
-            end
-        end
-    end
-    rot_rules = unique(rot_rules)
-    
-    # add rotation symmetry rule to rule dict
-    for rule in rot_rules
-        @assert(!haskey(dict, rule[1]), string("bad rule: ", tostr(rule[1]),"->",tostr(rule[2][1])))
-        push!(dict, rule[1], rule[2])
-    end
 end
 
