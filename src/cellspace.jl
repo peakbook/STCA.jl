@@ -99,14 +99,14 @@ function set_target_state(d::SubArray, val::Uint64)
     qw(d, west(lval))
 end
 
+idx_update=0
 function update!(cellspace::CellSpace, rule::Rule)
     # update cell space with checkerboard pattern
-    for idx1 in cellspace.idx[1]
-        update!(cellspace, rule, idx1[1], idx1[2])
+    global idx_update
+    for idx in cellspace.idx[idx_update+1]
+        update!(cellspace, rule, idx[1], idx[2])
     end
-    for idx2 in cellspace.idx[2]
-        update!(cellspace, rule, idx2[1], idx2[2])
-    end
+    idx_update= (idx_update+1)%2
 end
 
 function update!(cellspace::CellSpace, rule::Rule, x::Integer, y::Integer)
