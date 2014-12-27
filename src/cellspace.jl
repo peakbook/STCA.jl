@@ -1,25 +1,24 @@
 
 type CellSpace
-    cells::Array{Uint16,2}
-    width::Integer
-    height::Integer
-    idx1::Array
-    idx2::Array
+    cells::Array{Uint16,2} # cell array
+    width::Integer         # cell space width
+    height::Integer        # cell space height
+    idx::(Array,Array)     # checkerboard indices for update
     function CellSpace(w::Integer, h::Integer)
         cells = zeros(Uint32, w, h)
-        idx1, idx2 = genidx(w,h)
-        new (cells, w, h, idx1, idx2)
+        idx = genidx(w, h)
+        new (cells, w, h, idx)
     end
     function CellSpace(cells::Array{Uint16,2})
-        w = size(cells,1)
-        h = size(cells,2)
-        idx1, idx2 = genidx(w,h)
-        new (cells, w, h, idx1, idx2)
+        w = size(cells, 1)
+        h = size(cells, 2)
+        idx = genidx(w, h)
+        new (cells, w, h, idx)
     end
 end
 
 function genidx(w,h)
-    idx1 = (Int32,Int32)[]
+    idx1 = (Integer,Integer)[]
     for i=3:2:w-1, j=3:2:h-1
         push!(idx1,(i,j))
     end
@@ -28,7 +27,7 @@ function genidx(w,h)
     end
     sort!(idx1)
 
-    idx2 = (Int32,Int32)[]
+    idx2 = (Integer,Integer)[]
     for i=2:2:w-1, j=3:2:h-1
         push!(idx2,(i,j))
     end
@@ -36,9 +35,11 @@ function genidx(w,h)
         push!(idx2,(i,j))
     end
     sort!(idx2)
+
     idx1, idx2
 end
 
+# 0x1234 <-> 0xNESW
 function north(val::Uint16)
     val>>12
 end
@@ -52,6 +53,11 @@ function west(val::Uint16)
     val&0x000f
 end
 
+
+# subarray indices
+# [1][4][7]
+# [2][5][8]
+# [3][6][9]
 function qn(d::SubArray)
     uint32(south(d[4]))
 end
@@ -65,63 +71,64 @@ function qw(d::SubArray)
     uint32(east(d[2]))
 end
 
+
 function qn(d::SubArray, val::Uint16)
-    d[4] = (d[4]&0xff0f)|(north(val)<<4)
+    d[4] = (d[4]&0xff0f)|(val<<4)
 end
 function qe(d::SubArray, val::Uint16)
-    d[8] = (d[8]&0xfff0)|(east(val))
+    d[8] = (d[8]&0xfff0)|(val)
 end
 function qs(d::SubArray, val::Uint16)
-    d[6] = (d[6]&0x0fff)|(south(val)<<12)
+    d[6] = (d[6]&0x0fff)|(val<<12)
 end
 function qw(d::SubArray, val::Uint16)
-    d[2] = (d[2]&0xf0ff)|(west(val)<<8)
+    d[2] = (d[2]&0xf0ff)|(val<<8)
 end
 
-function getstate(d::SubArray)
-    uint32(uint32(d[5])<<16|qn(d)<<12|qe(d)<<8|qs(d)<<4|qw(d))
+function get_target_state(d::SubArray)
+    uint32(d[5])<<16|qn(d)<<12|qe(d)<<8|qs(d)<<4|qw(d)
 end
 
-function setstate(d::SubArray, state::Uint32)
-    hs = uint16(state>>16)
-    ls = uint16(state)
-    d[5] = hs
-    qn(d, ls)
-    qe(d, ls)
-    qs(d, ls)
-    qw(d, ls)
+function set_target_state(d::SubArray, val::Uint32)
+    hval = uint16(val>>16)
+    lval = uint16(val)
+    d[5] = hval
+    qn(d, north(lval))
+    qe(d, east(lval))
+    qs(d, south(lval))
+    qw(d, west(lval))
 end
 
 function update!(cellspace::CellSpace, rule::Rule)
-    for idx in cellspace.idx1
-        update!(cellspace, rule, idx[1], idx[2])
+    # update cell space with checkerboard pattern
+    for idx1 in cellspace.idx[1]
+        update!(cellspace, rule, idx1[1], idx1[2])
     end
-    for idx in cellspace.idx2
-        update!(cellspace, rule, idx[1], idx[2])
+    for idx2 in cellspace.idx[2]
+        update!(cellspace, rule, idx2[1], idx2[2])
     end
 end
 
 function update!(cellspace::CellSpace, rule::Rule, x::Integer, y::Integer)
-    # get local cells
-    sfd = sub(cellspace.cells, x-1:x+1, y-1:y+1)
+    # get 3x3 neighbor cells array
+    ncells = sub(cellspace.cells, x-1:x+1, y-1:y+1)
 
     # get current state of (x,y)
-    state = getstate(sfd)
+    state = get_target_state(ncells)
 
     # transition
     state,flag = transition(state, rule)
 
     # set state
-    setstate(sfd, state)
+    set_target_state(ncells, state)
 
     flag
 end
 
 function transition(key::Uint32, rule)
-    if haskey(rule.list, key)
-        rule.list[key], true
+    if haskey(rule.dict, key)
+        rule.dict[key][1], true
     else
-        # no rule
         key, false
     end
 end
@@ -145,6 +152,11 @@ function load_cell(fname::String)
 end
 
 function get_state(cs::CellSpace, x::Integer, y::Integer, typ::Symbol)
+    # typ is expected to be :north, :souch, :east, and :west
     eval(typ)(cs.cells[x, y])
+end
+
+function get_state(cs::CellSpace, x::Integer, y::Integer)
+    cs.cells[x, y]
 end
 
