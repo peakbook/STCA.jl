@@ -3,6 +3,7 @@ module STCA
 export CellSpace, Rule
 export save, load, update!, get_state, show
 
+include("common.jl")
 include("rule.jl")
 include("cellspace.jl")
 

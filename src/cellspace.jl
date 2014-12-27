@@ -1,6 +1,6 @@
 
 type CellSpace
-    cells::Array{Uint16,2} # cell array
+    cells::Array{Uint32,2} # cell array
     width::Integer         # cell space width
     height::Integer        # cell space height
     idx::(Array,Array)     # checkerboard indices for update
@@ -9,7 +9,7 @@ type CellSpace
         idx = genidx(w, h)
         new (cells, w, h, idx)
     end
-    function CellSpace(cells::Array{Uint16,2})
+    function CellSpace(cells::Array{Uint32,2})
         w = size(cells, 1)
         h = size(cells, 2)
         idx = genidx(w, h)
@@ -39,18 +39,18 @@ function genidx(w,h)
     idx1, idx2
 end
 
-# 0x1234 <-> 0xNESW
-function north(val::Uint16)
-    val>>12
+# 0x11223344 <-> 0xNNEESSWW
+function north(val::Uint32)
+    val>>24
 end
-function east(val::Uint16)
-    (val>>8)&0x000f
+function east(val::Uint32)
+    (val>>16)&0x0000_00ff
 end
-function south(val::Uint16)
-    (val>>4)&0x000f
+function south(val::Uint32)
+    (val>>8)&0x0000_00ff
 end
-function west(val::Uint16)
-    val&0x000f
+function west(val::Uint32)
+    val&0x0000_00ff
 end
 
 
@@ -59,39 +59,39 @@ end
 # [2][5][8]
 # [3][6][9]
 function qn(d::SubArray)
-    uint32(south(d[4]))
+    uint64(south(d[4]))
 end
 function qe(d::SubArray)
-    uint32(west(d[8]))
+    uint64(west(d[8]))
 end
 function qs(d::SubArray)
-    uint32(north(d[6]))
+    uint64(north(d[6]))
 end
 function qw(d::SubArray)
-    uint32(east(d[2]))
+    uint64(east(d[2]))
 end
 
 
-function qn(d::SubArray, val::Uint16)
-    d[4] = (d[4]&0xff0f)|(val<<4)
+function qn(d::SubArray, val::Uint32)
+    d[4] = (d[4]&0xffff_00ff)|(val<<8)
 end
-function qe(d::SubArray, val::Uint16)
-    d[8] = (d[8]&0xfff0)|(val)
+function qe(d::SubArray, val::Uint32)
+    d[8] = (d[8]&0xffff_ff00)|(val)
 end
-function qs(d::SubArray, val::Uint16)
-    d[6] = (d[6]&0x0fff)|(val<<12)
+function qs(d::SubArray, val::Uint32)
+    d[6] = (d[6]&0x00ff_ffff)|(val<<24)
 end
-function qw(d::SubArray, val::Uint16)
-    d[2] = (d[2]&0xf0ff)|(val<<8)
+function qw(d::SubArray, val::Uint32)
+    d[2] = (d[2]&0xff00_ffff)|(val<<16)
 end
 
 function get_target_state(d::SubArray)
-    uint32(d[5])<<16|qn(d)<<12|qe(d)<<8|qs(d)<<4|qw(d)
+    uint64(d[5])<<32|qn(d)<<24|qe(d)<<16|qs(d)<<8|qw(d)
 end
 
-function set_target_state(d::SubArray, val::Uint32)
-    hval = uint16(val>>16)
-    lval = uint16(val)
+function set_target_state(d::SubArray, val::Uint64)
+    hval = uint32(val>>32)
+    lval = uint32(val)
     d[5] = hval
     qn(d, north(lval))
     qe(d, east(lval))
@@ -125,7 +125,7 @@ function update!(cellspace::CellSpace, rule::Rule, x::Integer, y::Integer)
     flag
 end
 
-function transition(key::Uint32, rule)
+function transition(key::Uint64, rule)
     if haskey(rule.dict, key)
         rule.dict[key][1], true
     else
@@ -133,21 +133,14 @@ function transition(key::Uint32, rule)
     end
 end
 
-function tohexstr(val::Uint16)
-    hex(val,4)
-end
-
-function tohex(str::String)
-    uint16(string("0x",str))
-end
 
 function save(fname::String, cellspace::CellSpace)
-    cells = map(tohexstr, cellspace.cells)
+    cells = map(tostr, cellspace.cells)
     writedlm(fname, cells, ' ')
 end
 
 function load_cell(fname::String)
-    cells = map(tohex, readdlm(fname,String))
+    cells = map(toval32, readdlm(fname,String))
     CellSpace(cells)
 end
 
