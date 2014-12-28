@@ -18,5 +18,5 @@ end
 
 function toval32(str::AbstractString)
     @assert(length(str)==4)
-    uint32(str[1])<<24|uint32(str[2])<<16|uint32(str[3]<<8)|uint32(str[4])
+    uint32(str[1])<<24|uint32(str[2])<<16|uint32(str[3])<<8|uint32(str[4])
 end
