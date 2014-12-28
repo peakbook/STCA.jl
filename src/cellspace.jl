@@ -1,15 +1,15 @@
 
 type CellSpace
-    cells::Array{Uint32,2} # cell array
+    cells::Array{UInt32,2} # cell array
     width::Integer         # cell space width
     height::Integer        # cell space height
     idx::(Array,Array)     # checkerboard indices for update
     function CellSpace(w::Integer, h::Integer)
-        cells = zeros(Uint32, w, h)
+        cells = zeros(UInt32, w, h)
         idx = genidx(w, h)
         new (cells, w, h, idx)
     end
-    function CellSpace(cells::Array{Uint32,2})
+    function CellSpace(cells::Array{UInt32,2})
         w = size(cells, 1)
         h = size(cells, 2)
         idx = genidx(w, h)
@@ -40,16 +40,16 @@ function genidx(w,h)
 end
 
 # 0x11223344 <-> 0xNNEESSWW
-function north(val::Uint32)
+function north(val::UInt32)
     val>>24
 end
-function east(val::Uint32)
+function east(val::UInt32)
     (val>>16)&0x0000_00ff
 end
-function south(val::Uint32)
+function south(val::UInt32)
     (val>>8)&0x0000_00ff
 end
-function west(val::Uint32)
+function west(val::UInt32)
     val&0x0000_00ff
 end
 
@@ -72,16 +72,16 @@ function qw(d::SubArray)
 end
 
 
-function qn(d::SubArray, val::Uint32)
+function qn(d::SubArray, val::UInt32)
     d[4] = (d[4]&0xffff_00ff)|(val<<8)
 end
-function qe(d::SubArray, val::Uint32)
+function qe(d::SubArray, val::UInt32)
     d[8] = (d[8]&0xffff_ff00)|(val)
 end
-function qs(d::SubArray, val::Uint32)
+function qs(d::SubArray, val::UInt32)
     d[6] = (d[6]&0x00ff_ffff)|(val<<24)
 end
-function qw(d::SubArray, val::Uint32)
+function qw(d::SubArray, val::UInt32)
     d[2] = (d[2]&0xff00_ffff)|(val<<16)
 end
 
@@ -89,7 +89,7 @@ function get_target_state(d::SubArray)
     uint64(d[5])<<32|qn(d)<<24|qe(d)<<16|qs(d)<<8|qw(d)
 end
 
-function set_target_state(d::SubArray, val::Uint64)
+function set_target_state(d::SubArray, val::UInt64)
     hval = uint32(val>>32)
     lval = uint32(val)
     d[5] = hval
@@ -125,7 +125,7 @@ function update!(cellspace::CellSpace, rule::Rule, x::Integer, y::Integer)
     flag
 end
 
-function transition(key::Uint64, rule)
+function transition(key::UInt64, rule)
     if haskey(rule.dict, key)
         rule.dict[key][1], true
     else

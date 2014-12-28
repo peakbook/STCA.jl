@@ -1,11 +1,11 @@
 
-function tostr(val::Uint64)
+function tostr(val::UInt64)
     hval = uint32(val>>32)
     lval = uint32(val)
     string(tostr(hval),tostr(lval))
 end
 
-function tostr(val::Uint32)
+function tostr(val::UInt32)
     string(char(val>>24), char((val>>16)&0xff), char((val>>8)&0xff), char(val&0xff))
 end
 

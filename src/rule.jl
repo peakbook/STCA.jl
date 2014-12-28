@@ -1,11 +1,11 @@
 
 type Rule
-    dict::Dict{Uint64, (Uint64,Uint64)} # rule dictionary (fin=>(fout,rule_index))
-    states::Array{(Uint8,Uint)}         # states of partition
-    N::Uint64                           # num of transition rules
-    Nrot::Uint64                        # num of transition rules including rotational symmetry
+    dict::Dict{UInt64, (UInt64,UInt64)} # rule dictionary (fin=>(fout,rule_index))
+    states::Array{(UInt8,UInt)}         # states of partition
+    N::UInt64                           # num of transition rules
+    Nrot::UInt64                        # num of transition rules including rotational symmetry
     function Rule()
-        new(Dict{Uint64,(Uint64,Uint64)}(),(Uint8)[],0,0)
+        new(Dict{UInt64,(UInt64,UInt64)}(),(UInt8)[],0,0)
     end
 end
 
@@ -54,7 +54,7 @@ function load_rule(lines::Array)
     rule
 end
 
-function add_rule(rule::Rule, fin::Uint64, fout::Uint64)
+function add_rule(rule::Rule, fin::UInt64, fout::UInt64)
    rot_rules = gen_rotational_rule(fin, fout) 
    check_rule_validity(rot_rules)
    has_rotational_rule(rule.dict, rot_rules)
@@ -65,8 +65,8 @@ function add_rule(rule::Rule, fin::Uint64, fout::Uint64)
    rule.N+=1
 end
 
-function gen_rotational_rule(fin::Uint64, fout::Uint64)
-    rot_rules = (Uint64,Uint64)[]
+function gen_rotational_rule(fin::UInt64, fout::UInt64)
+    rot_rules = (UInt64,UInt64)[]
     push!(rot_rules, (fin,fout))
     for i=1:3
         fin = rotate(fin)
@@ -76,7 +76,7 @@ function gen_rotational_rule(fin::Uint64, fout::Uint64)
     unique(rot_rules)
 end
 
-function check_rule_validity(rot_rules::Array{(Uint,Uint)})
+function check_rule_validity(rot_rules::Array{(UInt,UInt)})
     fins = unique(map(x->x[1],rot_rules))
     fouts = unique(map(x->x[2],rot_rules))
     if length(fins)<length(fouts)
@@ -84,7 +84,7 @@ function check_rule_validity(rot_rules::Array{(Uint,Uint)})
     end
 end
 
-function has_rotational_rule(dict::Dict, rot_rules::Array{(Uint,Uint)})
+function has_rotational_rule(dict::Dict, rot_rules::Array{(UInt,UInt)})
     for rule in rot_rules
         if haskey(dict,rule[1])
             throw(string("*caution* dup rule: ",tostr(rule[1]),"->",tostr(rule[2])))
@@ -93,7 +93,7 @@ function has_rotational_rule(dict::Dict, rot_rules::Array{(Uint,Uint)})
 end
 
 function gen_partition_states_list(rule::Rule)
-    states = Dict{Uint8,Uint}()
+    states = Dict{UInt8,UInt}()
     for fin in keys(rule.dict)
         fout,ridx = rule.dict[fin]
         v = (uint128(fin)<<64)|fout
@@ -114,7 +114,7 @@ function gen_partition_states_list(rule::Rule)
 end
 
 # 0x11223344_55667788 -> 0x44112233_88556677
-function rotate(val::Uint64)
+function rotate(val::UInt64)
     hv = uint32(val>>32)
     lv = uint32(val)
     hv = rotate(hv)
@@ -123,7 +123,7 @@ function rotate(val::Uint64)
 end
 
 # 0x11223344 -> 0x44112233
-function rotate(val::Uint32)
+function rotate(val::UInt32)
     (val>>8)|((val&0x0000_000ff)<<24)
 end
 
@@ -133,7 +133,7 @@ function show(io::IO, rule::Rule, rotflag::Bool=false)
             write(io, string(tostr(fin)," ",tostr(rule.dict[fin][1]),"\n"))
         end
     else
-        ruleidx = Uint64[]
+        ruleidx = UInt64[]
         for fin in keys(rule.dict)
             if !(rule.dict[fin][2] in ruleidx)
                 write(io, string(tostr(fin)," ",tostr(rule.dict[fin][1]),"\n"))

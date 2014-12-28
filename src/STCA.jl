@@ -1,4 +1,5 @@
 module STCA
+using Compat
 import Base.show
 import Base.print
 import Base.println
@@ -10,7 +11,7 @@ include("common.jl")
 include("rule.jl")
 include("cellspace.jl")
 
-const loadfuncs = [:CellSpace=>load_cell, :Rule=>load_rule]
+const loadfuncs = @compat Dict(:CellSpace=>load_cell, :Rule=>load_rule)
 function load(fname::String, typ::Symbol)
     if haskey(loadfuncs, typ)
         loadfuncs[typ](fname)
