@@ -1,7 +1,10 @@
 module STCA
+import Base.show
+import Base.print
+import Base.println
 
 export CellSpace, Rule
-export save, load, update!, get_state, show
+export save, load, update!, get_state
 
 include("common.jl")
 include("rule.jl")

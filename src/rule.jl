@@ -9,25 +9,9 @@ type Rule
     end
 end
 
-function show(rule::Rule)
-    println("num of rules            : ", rule.N)
-    println("num of rules (inc. rot.): ", rule.Nrot)
-    println("num of partition states : ", length(rule.states))
-    for state in rule.states
-        println(" ",char(state[1]),": ",state[2])
-    end
-end
-
 function save(fname::String, rule::Rule)
-    ruleidx = Dict{Uint64,Bool}()
-
     open(fname, "w") do f
-        for fin in keys(rule.dict)
-            if !haskey(ruleidx, rule.dict[fin][2])
-                write(f, string(tostr(fin)," ",tostr(rule.dict[fin][1]),"\n"))
-                push!(ruleidx, rule.dict[fin][2],true)
-            end
-        end
+        show(f, rule)
     end
 end
 
@@ -38,8 +22,7 @@ function load_rule(fname::String)
     lines = String[]
     for line in flines
         # eliminate ret code
-        line = replace(line, "\n", "")
-        line = replace(line, "\r", "")
+        line = replace(line, r"\s*(\r|\n)", "")
 
         # skip comment/brank line
         if ismatch(r"^\s*(#)",line) || length(line)==0
@@ -142,5 +125,30 @@ end
 # 0x11223344 -> 0x44112233
 function rotate(val::Uint32)
     (val>>8)|((val&0x0000_000ff)<<24)
+end
+
+function show(io::IO, rule::Rule, rotflag::Bool=false)
+    if rotflag
+        for fin in keys(rule.dict)
+            write(io, string(tostr(fin)," ",tostr(rule.dict[fin][1]),"\n"))
+        end
+    else
+        ruleidx = Uint64[]
+        for fin in keys(rule.dict)
+            if !(rule.dict[fin][2] in ruleidx)
+                write(io, string(tostr(fin)," ",tostr(rule.dict[fin][1]),"\n"))
+                push!(ruleidx, rule.dict[fin][2])
+            end
+        end
+    end
+end
+
+function print(rule::Rule, rotflag::Bool=false)
+    show(STDOUT, rule, fotflag)
+end
+
+function println(rule::Rule, rotflag::Bool=false)
+    show(STDOUT, rule, rotflag)
+    println()
 end
 

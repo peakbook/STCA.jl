@@ -133,9 +133,8 @@ function transition(key::Uint64, rule)
     end
 end
 
-
-function save(fname::String, cellspace::CellSpace)
-    cells = map(tostr, cellspace.cells)
+function save(fname::String, cs::CellSpace)
+    cells = map(tostr, cs.cells)
     writedlm(fname, cells, ' ')
 end
 
@@ -151,5 +150,19 @@ end
 
 function get_state(cs::CellSpace, x::Integer, y::Integer)
     cs.cells[x, y]
+end
+
+function show(io::IO, cs::CellSpace)
+    cells = map(tostr, cs.cells)
+    writedlm(io, cells, ' ')
+end
+
+function print(cs::CellSpace)
+    show(STDOUT, cs)
+end
+
+function println(cs::CellSpace)
+    show(STDOUT, cs)
+    println()
 end
 
