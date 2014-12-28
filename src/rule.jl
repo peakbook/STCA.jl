@@ -116,7 +116,7 @@ end
 # 0x11223344_55667788 -> 0x44112233_88556677
 function rotate(val::UInt64)
     hv = uint32(val>>32)
-    lv = uint32(val)
+    lv = uint32(val&0xffff_ffff)
     hv = rotate(hv)
     lv = rotate(lv)
     (uint64(hv)<<32)|uint64(lv)

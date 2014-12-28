@@ -1,7 +1,7 @@
 
 function tostr(val::UInt64)
     hval = uint32(val>>32)
-    lval = uint32(val)
+    lval = uint32(val&0xffff_ffff)
     string(tostr(hval),tostr(lval))
 end
 

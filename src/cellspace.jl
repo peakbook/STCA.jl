@@ -91,7 +91,7 @@ end
 
 function set_target_state(d::SubArray, val::UInt64)
     hval = uint32(val>>32)
-    lval = uint32(val)
+    lval = uint32(val&0xffff_ffff)
     d[5] = hval
     qn(d, north(lval))
     qe(d, east(lval))
