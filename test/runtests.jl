@@ -1,4 +1,5 @@
 using STCA
+using Compat
 using Base.Test
 
 @test STCA.tostr(0x3031_3233)=="0123"
