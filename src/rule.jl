@@ -9,17 +9,17 @@ type Rule
     end
 end
 
-function save(fname::String, rule::Rule)
+function save(fname::AbstractString, rule::Rule)
     open(fname, "w") do f
         show(f, rule)
     end
 end
 
-function load_rule(fname::String)
+function load_rule(fname::AbstractString)
     flines = open(fname) do f
         readlines(f) 
     end
-    lines = String[]
+    lines = AbstractString[]
     for line in flines
         # eliminate ret code
         line = replace(line, r"\s*(\r|\n)", "")

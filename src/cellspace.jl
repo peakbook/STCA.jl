@@ -133,13 +133,13 @@ function transition(key::UInt64, rule)
     end
 end
 
-function save(fname::String, cs::CellSpace)
+function save(fname::AbstractString, cs::CellSpace)
     cells = map(tostr, cs.cells)
     writedlm(fname, cells, ' ')
 end
 
-function load_cell(fname::String)
-    cells = map(toval32, readdlm(fname,String))
+function load_cell(fname::AbstractString)
+    cells = map(toval32, readdlm(fname,AbstractString))
     CellSpace(cells)
 end
 
