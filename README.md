@@ -16,7 +16,9 @@ rule = load("rule.txt", :Rule)
 println(rule)
 
 for i=1:10
-    update!(cs, rule)
+    update!(cs, rule, :Checkerboard)
+    # update!(cs, rule, :Random)
+    # update!(cs, rule, x, y)
     println(cs)
 end
 ```
