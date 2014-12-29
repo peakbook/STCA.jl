@@ -87,8 +87,8 @@ function update_checkerboard!(cs::CellSpace, rule::Rule)
 end
 
 function update_random!(cs::CellSpace, rule::Rule)
-    for idx in shuffle!([(i,j) for i=2:cs.width-1,j=2:cs.height-1])
-        update!(cellspace, rule, idx[1], idx[2])
+    for idx in shuffle(vec([(i,j) for i=2:cs.width-1,j=2:cs.height-1]))
+        update!(cs, rule, idx[1], idx[2])
     end
 end
 
