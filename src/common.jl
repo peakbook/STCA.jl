@@ -20,3 +20,10 @@ function toval32(str::AbstractString)
     @assert(length(str)==4)
     uint32(str[1])<<24|uint32(str[2])<<16|uint32(str[3])<<8|uint32(str[4])
 end
+
+const loadfuncs = @compat Dict(:CellSpace=>load_cell, :Rule=>load_rule)
+function load(fname::String, typ::Symbol)
+    if haskey(loadfuncs, typ)
+        loadfuncs[typ](fname)
+    end
+end
