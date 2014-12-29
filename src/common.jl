@@ -25,5 +25,16 @@ const loadfuncs = @compat Dict(:CellSpace=>load_cell, :Rule=>load_rule)
 function load(fname::String, typ::Symbol)
     if haskey(loadfuncs, typ)
         loadfuncs[typ](fname)
+    else
+        throw("no function for $typ")
+    end
+end
+
+const updatefuncs = @compat Dict(:Checkerboard=>update_checkerboard!, :Random=>update_random!)
+function update!(cs::CellSpace, rule::Rule, typ::Symbol)
+    if haskey(updatefuncs, typ)
+        updatefuncs[typ](cs, rule)
+    else
+        throw("no function for $typ")
     end
 end

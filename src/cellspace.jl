@@ -3,40 +3,15 @@ type CellSpace
     cells::Array{UInt32,2} # cell array
     width::Integer         # cell space width
     height::Integer        # cell space height
-    idx::(Array,Array)     # checkerboard indices for update
     function CellSpace(w::Integer, h::Integer)
         cells = zeros(UInt32, w, h)
-        idx = genidx(w, h)
-        new (cells, w, h, idx)
+        new (cells, w, h)
     end
     function CellSpace(cells::Array{UInt32,2})
         w = size(cells, 1)
         h = size(cells, 2)
-        idx = genidx(w, h)
-        new (cells, w, h, idx)
+        new (cells, w, h)
     end
-end
-
-function genidx(w,h)
-    idx1 = (Integer,Integer)[]
-    for i=3:2:w-1, j=3:2:h-1
-        push!(idx1,(i,j))
-    end
-    for i=2:2:w-1, j=2:2:h-1
-        push!(idx1,(i,j))
-    end
-    sort!(idx1)
-
-    idx2 = (Integer,Integer)[]
-    for i=2:2:w-1, j=3:2:h-1
-        push!(idx2,(i,j))
-    end
-    for i=3:2:w-1, j=2:2:h-1
-        push!(idx2,(i,j))
-    end
-    sort!(idx2)
-
-    idx1, idx2
 end
 
 # 0x11223344 <-> 0xNNEESSWW
@@ -99,14 +74,22 @@ function set_target_state(d::SubArray, val::UInt64)
     qw(d, west(lval))
 end
 
-idx_update=0
-function update!(cellspace::CellSpace, rule::Rule)
-    # update cell space with checkerboard pattern
-    global idx_update
-    for idx in cellspace.idx[idx_update+1]
+function update_checkerboard!(cs::CellSpace, rule::Rule)
+    w = cs.width-1
+    h = cs.height-1
+
+    @parallel for idx in [vec([(i,j) for i=3:2:w,j=3:2:h]),vec([(i,j) for i=2:2:w,j=2:2:h])]
+        update!(cs, rule, idx[1], idx[2])
+    end
+    @parallel for idx in [vec([(i,j) for i=2:2:w,j=3:2:h]),vec([(i,j) for i=3:2:w,j=2:2:h])]
+        update!(cs, rule, idx[1], idx[2])
+    end
+end
+
+function update_random!(cellspace::CellSpace, rule::Rule)
+    for idx in shuffle!([(i,j) for i=2:w-1,j=2:h-1])
         update!(cellspace, rule, idx[1], idx[2])
     end
-    idx_update= (idx_update+1)%2
 end
 
 function update!(cellspace::CellSpace, rule::Rule, x::Integer, y::Integer)
