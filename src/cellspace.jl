@@ -86,15 +86,15 @@ function update_checkerboard!(cs::CellSpace, rule::Rule)
     end
 end
 
-function update_random!(cellspace::CellSpace, rule::Rule)
-    for idx in shuffle!([(i,j) for i=2:w-1,j=2:h-1])
+function update_random!(cs::CellSpace, rule::Rule)
+    for idx in shuffle!([(i,j) for i=2:cs.width-1,j=2:cs.height-1])
         update!(cellspace, rule, idx[1], idx[2])
     end
 end
 
-function update!(cellspace::CellSpace, rule::Rule, x::Integer, y::Integer)
+function update!(cs::CellSpace, rule::Rule, x::Integer, y::Integer)
     # get 3x3 neighbor cells array
-    ncells = sub(cellspace.cells, x-1:x+1, y-1:y+1)
+    ncells = sub(cs.cells, x-1:x+1, y-1:y+1)
 
     # get current state of (x,y)
     state = get_target_state(ncells)
