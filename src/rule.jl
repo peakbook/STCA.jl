@@ -22,7 +22,7 @@ function load_rule(fname::AbstractString)
     lines = AbstractString[]
     for line in flines
         # eliminate ret code
-        line = replace(line, r"\s*(\r|\n)", "")
+        line = chomp(line)
 
         # skip comment/brank line
         if ismatch(r"^\s*(#)",line) || length(line)==0
