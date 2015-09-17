@@ -39,15 +39,14 @@ function load_rule(lines::Array)
     rule = Rule()
 
     for line in lines
-        str = split(line[1:end], ' ')
-        try
-            fin = toval64(str[1])
-            fout = toval64(str[2])
-            add_rule(rule, fin, fout)
-        catch ex
-            println(ex)
+        if !ismatch(r"^[0-9a-zA-Z]{8,8}\s[0-9a-zA-Z]{8,8}$", line)
+            warn(string("Parse error: ", line))
             continue
         end
+        str = split(line[1:end], ' ')
+        fin = toval64(str[1])
+        fout = toval64(str[2])
+        add_rule(rule, fin, fout)
     end
     gen_partition_states_list(rule)
 
@@ -80,14 +79,14 @@ function check_rule_validity(rot_rules::Array{(UInt,UInt)})
     fins = unique(map(x->x[1],rot_rules))
     fouts = unique(map(x->x[2],rot_rules))
     if length(fins)<length(fouts)
-        throw(string("*caution* bad rule: ",tostr(fins[1]),"->", tostr(fouts[1])))
+        warn(string("Bad rule: ",tostr(fins[1]),"->", tostr(fouts[1])))
     end
 end
 
 function has_rotational_rule(dict::Dict, rot_rules::Array{(UInt,UInt)})
     for rule in rot_rules
         if haskey(dict,rule[1])
-            throw(string("*caution* dup rule: ",tostr(rule[1]),"->",tostr(rule[2])))
+            warn(string("Dup rule: ",tostr(rule[1]),"->",tostr(rule[2])))
         end
     end
 end
