@@ -122,7 +122,15 @@ function save(fname::AbstractString, cs::CellSpace)
 end
 
 function load_cell(fname::AbstractString)
-    cells = map(toval32, readdlm(fname,AbstractString))
+    tcells = readdlm(fname,ASCIIString)
+    load_cell(tcells)
+end
+
+function load_cell(tcells::Array{ASCIIString,2})
+    if !reduce(&,map(x->ismatch(r"^[0-9a-zA-Z]{4,4}$",x), tcells))
+        throw("cell data error.")
+    end
+    cells = map(toval32, tcells)
     CellSpace(cells)
 end
 
