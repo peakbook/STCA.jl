@@ -1,11 +1,13 @@
 
 type Rule
-    dict::Dict{UInt64, (UInt64,UInt64)} # rule dictionary (fin=>(fout,rule_index))
-    states::Array{(UInt8,UInt)}         # states of partition
-    N::UInt64                           # num of transition rules
-    Nrot::UInt64                        # num of transition rules including rotational symmetry
+    dict::@compat Dict{UInt64, Tuple{UInt64,UInt64}} # rule dictionary (fin=>(fout,rule_index))
+    states::@compat Array{Tuple{UInt8,UInt}}         # states of partition
+    N::UInt64                                        # num of transition rules
+    Nrot::UInt64                                     # num of transition rules including rotational symmetry
     function Rule()
-        new(Dict{UInt64,(UInt64,UInt64)}(),(UInt8)[],0,0)
+        dict = Dict{UInt64,Tuple{UInt64,UInt64}}()
+        states = Tuple{UInt8,UInt}[]
+        new(dict,states,0,0)
     end
 end
 
