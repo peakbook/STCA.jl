@@ -5,8 +5,8 @@ type Rule
     N::UInt64                                        # num of transition rules
     Nrot::UInt64                                     # num of transition rules including rotational symmetry
     function Rule()
-        dict = Dict{UInt64,Tuple{UInt64,UInt64}}()
-        states = Tuple{UInt8,UInt}[]
+        dict = @compat Dict{UInt64,Tuple{UInt64,UInt64}}()
+        states = @compat Tuple{UInt8,UInt}[]
         new(dict,states,0,0)
     end
 end
@@ -60,14 +60,15 @@ function add_rule(rule::Rule, fin::UInt64, fout::UInt64)
    check_rule_validity(rot_rules)
    has_rotational_rule(rule.dict, rot_rules)
    for r in rot_rules
-       push!(rule.dict, r[1], (r[2], rule.N))
+       # push!(rule.dict, r[1], (r[2], rule.N))
+       setindex!(rule.dict, (r[2], rule.N), r[1])
        rule.Nrot+=1
    end
    rule.N+=1
 end
 
 function gen_rotational_rule(fin::UInt64, fout::UInt64)
-    rot_rules = (UInt64,UInt64)[]
+    rot_rules = @compat Tuple{UInt64,UInt64}[]
     push!(rot_rules, (fin,fout))
     for i=1:3
         fin = rotate(fin)
@@ -77,7 +78,7 @@ function gen_rotational_rule(fin::UInt64, fout::UInt64)
     unique(rot_rules)
 end
 
-function check_rule_validity(rot_rules::Array{(UInt,UInt)})
+function check_rule_validity(rot_rules::@compat Array{Tuple{UInt64,UInt64}})
     fins = unique(map(x->x[1],rot_rules))
     fouts = unique(map(x->x[2],rot_rules))
     if length(fins)<length(fouts)
@@ -85,7 +86,7 @@ function check_rule_validity(rot_rules::Array{(UInt,UInt)})
     end
 end
 
-function has_rotational_rule(dict::Dict, rot_rules::Array{(UInt,UInt)})
+function has_rotational_rule(dict::Dict, rot_rules::@compat Array{Tuple{UInt,UInt}})
     for rule in rot_rules
         if haskey(dict,rule[1])
             warn(string("Dup rule: ",tostr(rule[1]),"->",tostr(rule[2])))
@@ -97,13 +98,13 @@ function gen_partition_states_list(rule::Rule)
     states = Dict{UInt8,UInt}()
     for fin in keys(rule.dict)
         fout,ridx = rule.dict[fin]
-        v = (uint128(fin)<<64)|fout
+        v = (@compat UInt128(fin)<<64)|fout
         for i=0:8:120
-            p = uint8((v>>i)&0xff)
+            p = @compat UInt8((v>>i)&0xff)
             if haskey(states, p)
                 states[p] += 1
             else
-                push!(states, p, 1) 
+                setindex!(states, 1, p) 
             end
         end
     end
@@ -115,16 +116,16 @@ function gen_partition_states_list(rule::Rule)
 end
 
 # 0x11223344_55667788 -> 0x44112233_88556677
-function rotate(val::UInt64)
-    hv = uint32(val>>32)
-    lv = uint32(val&0xffff_ffff)
+@inline function rotate(val::UInt64)
+    hv = @compat UInt32(val>>32)
+    lv = @compat UInt32(val&0xffff_ffff)
     hv = rotate(hv)
     lv = rotate(lv)
-    (uint64(hv)<<32)|uint64(lv)
+    (@compat UInt64(hv)<<32)|@compat UInt64(lv)
 end
 
 # 0x11223344 -> 0x44112233
-function rotate(val::UInt32)
+@inline function rotate(val::UInt32)
     (val>>8)|((val&0x0000_000ff)<<24)
 end
 

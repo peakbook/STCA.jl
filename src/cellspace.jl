@@ -15,16 +15,16 @@ type CellSpace
 end
 
 # 0x11223344 <-> 0xNNEESSWW
-function north(val::UInt32)
+@inline function north(val::UInt32)
     val>>24
 end
-function east(val::UInt32)
+@inline function east(val::UInt32)
     (val>>16)&0x0000_00ff
 end
-function south(val::UInt32)
+@inline function south(val::UInt32)
     (val>>8)&0x0000_00ff
 end
-function west(val::UInt32)
+@inline function west(val::UInt32)
     val&0x0000_00ff
 end
 
@@ -33,40 +33,40 @@ end
 # [1][4][7]
 # [2][5][8]
 # [3][6][9]
-function qn(d::SubArray)
-    uint64(south(d[4]))
+@inline function qn(d::SubArray)
+    @compat UInt64(south(d[4]))
 end
-function qe(d::SubArray)
-    uint64(west(d[8]))
+@inline function qe(d::SubArray)
+    @compat UInt64(west(d[8]))
 end
-function qs(d::SubArray)
-    uint64(north(d[6]))
+@inline function qs(d::SubArray)
+    @compat UInt64(north(d[6]))
 end
-function qw(d::SubArray)
-    uint64(east(d[2]))
+@inline function qw(d::SubArray)
+    @compat UInt64(east(d[2]))
 end
 
 
-function qn(d::SubArray, val::UInt32)
+@inline function qn(d::SubArray, val::UInt32)
     d[4] = (d[4]&0xffff_00ff)|(val<<8)
 end
-function qe(d::SubArray, val::UInt32)
+@inline function qe(d::SubArray, val::UInt32)
     d[8] = (d[8]&0xffff_ff00)|(val)
 end
-function qs(d::SubArray, val::UInt32)
+@inline function qs(d::SubArray, val::UInt32)
     d[6] = (d[6]&0x00ff_ffff)|(val<<24)
 end
-function qw(d::SubArray, val::UInt32)
+@inline function qw(d::SubArray, val::UInt32)
     d[2] = (d[2]&0xff00_ffff)|(val<<16)
 end
 
 function get_target_state(d::SubArray)
-    uint64(d[5])<<32|qn(d)<<24|qe(d)<<16|qs(d)<<8|qw(d)
+    @compat UInt64(d[5])<<32|qn(d)<<24|qe(d)<<16|qs(d)<<8|qw(d)
 end
 
 function set_target_state(d::SubArray, val::UInt64)
-    hval = uint32(val>>32)
-    lval = uint32(val&0xffff_ffff)
+    hval = @compat UInt32(val>>32)
+    lval = @compat UInt32(val&0xffff_ffff)
     d[5] = hval
     qn(d, north(lval))
     qe(d, east(lval))
@@ -78,10 +78,10 @@ function update_checkerboard!(cs::CellSpace, rule::Rule)
     w = cs.width-1
     h = cs.height-1
 
-    @parallel for idx in [vec([(i,j) for i=3:2:w,j=3:2:h]),vec([(i,j) for i=2:2:w,j=2:2:h])]
+    @parallel for idx in [vec([(i,j) for i=3:2:w,j=3:2:h]);vec([(i,j) for i=2:2:w,j=2:2:h])]
         update!(cs, rule, idx[1], idx[2])
     end
-    @parallel for idx in [vec([(i,j) for i=2:2:w,j=3:2:h]),vec([(i,j) for i=3:2:w,j=2:2:h])]
+    @parallel for idx in [vec([(i,j) for i=2:2:w,j=3:2:h]);vec([(i,j) for i=3:2:w,j=2:2:h])]
         update!(cs, rule, idx[1], idx[2])
     end
 end

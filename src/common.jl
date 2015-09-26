@@ -1,24 +1,24 @@
 
-function tostr(val::UInt64)
-    hval = uint32(val>>32)
-    lval = uint32(val&0xffff_ffff)
+@inline function tostr(val::UInt64)
+    hval = @compat UInt32(val>>32)
+    lval = @compat UInt32(val&0xffff_ffff)
     string(tostr(hval),tostr(lval))
 end
 
-function tostr(val::UInt32)
-    string(char(val>>24), char((val>>16)&0xff), char((val>>8)&0xff), char(val&0xff))
+@inline function tostr(val::UInt32)
+    string((@compat Char(val>>24)), (@compat Char((val>>16)&0xff)), (@compat Char((val>>8)&0xff)), (@compat Char(val&0xff)))
 end
 
-function toval64(str::AbstractString)
+@inline function toval64(str::AbstractString)
     @assert(length(str)==8, length(str))
     hval = toval32(str[1:4])
     lval = toval32(str[5:8])
-    uint64(hval)<<32|uint64(lval)
+    @compat UInt64(hval)<<32|@compat UInt64(lval)
 end
 
-function toval32(str::AbstractString)
+@inline function toval32(str::AbstractString)
     @assert(length(str)==4)
-    uint32(str[1])<<24|uint32(str[2])<<16|uint32(str[3])<<8|uint32(str[4])
+    @compat UInt32(str[1])<<24|@compat UInt32(str[2])<<16|@compat UInt32(str[3])<<8|@compat UInt32(str[4])
 end
 
 const loadfuncs = @compat Dict(:CellSpace=>load_cell, :Rule=>load_rule)
