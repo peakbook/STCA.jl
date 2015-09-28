@@ -1,6 +1,8 @@
 ## STCA.jl
 
 [![Build Status](https://travis-ci.org/peakbook/STCA.jl.svg?branch=master)](https://travis-ci.org/peakbook/STCA.jl)  
+[![Coverage Status](https://coveralls.io/repos/peakbook/STCA.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/peakbook/STCA.jl?branch=master)
+[![codecov.io](http://codecov.io/github/peakbook/STCA.jl/coverage.svg?branch=master)](http://codecov.io/github/peakbook/STCA.jl?branch=master)
 
 STCA.jl is a Julia package that provides simple routines for Self-Timed Cellular Automata (STCA) simulations.
 
