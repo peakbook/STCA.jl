@@ -5,12 +5,12 @@ type CellSpace
     height::Integer        # cell space height
     function CellSpace(w::Integer, h::Integer)
         cells = zeros(UInt32, w, h)
-        new (cells, w, h)
+        new(cells, w, h)
     end
     function CellSpace(cells::Array{UInt32,2})
         w = size(cells, 1)
         h = size(cells, 2)
-        new (cells, w, h)
+        new(cells, w, h)
     end
 end
 
@@ -34,16 +34,16 @@ end
 # [2][5][8]
 # [3][6][9]
 @inline function qn(d::SubArray)
-    @compat UInt64(south(d[4]))
+    UInt64(south(d[4]))
 end
 @inline function qe(d::SubArray)
-    @compat UInt64(west(d[8]))
+    UInt64(west(d[8]))
 end
 @inline function qs(d::SubArray)
-    @compat UInt64(north(d[6]))
+    UInt64(north(d[6]))
 end
 @inline function qw(d::SubArray)
-    @compat UInt64(east(d[2]))
+    UInt64(east(d[2]))
 end
 
 
@@ -61,12 +61,12 @@ end
 end
 
 function get_target_state(d::SubArray)
-    @compat UInt64(d[5])<<32|qn(d)<<24|qe(d)<<16|qs(d)<<8|qw(d)
+    UInt64(d[5])<<32|qn(d)<<24|qe(d)<<16|qs(d)<<8|qw(d)
 end
 
 function set_target_state(d::SubArray, val::UInt64)
-    hval = @compat UInt32(val>>32)
-    lval = @compat UInt32(val&0xffff_ffff)
+    hval = UInt32(val>>32)
+    lval = UInt32(val&0xffff_ffff)
     d[5] = hval
     qn(d, north(lval))
     qe(d, east(lval))
@@ -122,11 +122,11 @@ function save(fname::AbstractString, cs::CellSpace)
 end
 
 function load_cell(fname::AbstractString)
-    tcells = readdlm(fname,ASCIIString)
+    tcells = readdlm(fname,String)
     load_cell(tcells)
 end
 
-function load_cell(tcells::Array{ASCIIString,2})
+function load_cell(tcells::Array{String,2})
     if !reduce(&,map(x->ismatch(r"^[0-9a-zA-Z]{4,4}$",x), tcells))
         throw("cell data error.")
     end

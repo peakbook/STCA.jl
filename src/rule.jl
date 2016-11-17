@@ -1,12 +1,12 @@
 
 type Rule
-    dict::@compat Dict{UInt64, Tuple{UInt64,UInt64}} # rule dictionary (fin=>(fout,rule_index))
-    states::@compat Array{Tuple{UInt8,UInt}}         # states of partition
+    dict::Dict{UInt64, Tuple{UInt64,UInt64}} # rule dictionary (fin=>(fout,rule_index))
+    states::Array{Tuple{UInt8,UInt}}         # states of partition
     N::UInt64                                        # num of transition rules
     Nrot::UInt64                                     # num of transition rules including rotational symmetry
     function Rule()
-        dict = @compat Dict{UInt64,Tuple{UInt64,UInt64}}()
-        states = @compat Tuple{UInt8,UInt}[]
+        dict = Dict{UInt64,Tuple{UInt64,UInt64}}()
+        states = Tuple{UInt8,UInt}[]
         new(dict,states,0,0)
     end
 end
@@ -68,7 +68,7 @@ function add_rule(rule::Rule, fin::UInt64, fout::UInt64)
 end
 
 function gen_rotational_rule(fin::UInt64, fout::UInt64)
-    rot_rules = @compat Tuple{UInt64,UInt64}[]
+    rot_rules = Tuple{UInt64,UInt64}[]
     push!(rot_rules, (fin,fout))
     for i=1:3
         fin = rotate(fin)
@@ -78,7 +78,7 @@ function gen_rotational_rule(fin::UInt64, fout::UInt64)
     unique(rot_rules)
 end
 
-function check_rule_validity(rot_rules::@compat Array{Tuple{UInt64,UInt64}})
+function check_rule_validity(rot_rules::Array{Tuple{UInt64,UInt64}})
     fins = unique(map(x->x[1],rot_rules))
     fouts = unique(map(x->x[2],rot_rules))
     if length(fins)<length(fouts)
@@ -86,7 +86,7 @@ function check_rule_validity(rot_rules::@compat Array{Tuple{UInt64,UInt64}})
     end
 end
 
-function has_rotational_rule(dict::Dict, rot_rules::@compat Array{Tuple{UInt,UInt}})
+function has_rotational_rule(dict::Dict, rot_rules::Array{Tuple{UInt,UInt}})
     for rule in rot_rules
         if haskey(dict,rule[1])
             warn(string("Dup rule: ",tostr(rule[1]),"->",tostr(rule[2])))
@@ -98,9 +98,9 @@ function gen_partition_states_list(rule::Rule)
     states = Dict{UInt8,UInt}()
     for fin in keys(rule.dict)
         fout,ridx = rule.dict[fin]
-        v = (@compat UInt128(fin)<<64)|fout
+        v = (UInt128(fin)<<64)|fout
         for i=0:8:120
-            p = @compat UInt8((v>>i)&0xff)
+            p = UInt8((v>>i)&0xff)
             if haskey(states, p)
                 states[p] += 1
             else
@@ -117,11 +117,11 @@ end
 
 # 0x11223344_55667788 -> 0x44112233_88556677
 @inline function rotate(val::UInt64)
-    hv = @compat UInt32(val>>32)
-    lv = @compat UInt32(val&0xffff_ffff)
+    hv = UInt32(val>>32)
+    lv = UInt32(val&0xffff_ffff)
     hv = rotate(hv)
     lv = rotate(lv)
-    (@compat UInt64(hv)<<32)|@compat UInt64(lv)
+    (UInt64(hv)<<32)|UInt64(lv)
 end
 
 # 0x11223344 -> 0x44112233

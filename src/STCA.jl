@@ -1,7 +1,6 @@
-isdefined(Base, :__precompile__) && __precompile__()
+__precompile__()
 
 module STCA
-using Compat
 import Base.show
 import Base.print
 import Base.println
