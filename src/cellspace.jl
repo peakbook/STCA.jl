@@ -94,7 +94,7 @@ end
 
 function update!(cs::CellSpace, rule::Rule, x::Integer, y::Integer)
     # get 3x3 neighbor cells array
-    ncells = sub(cs.cells, x-1:x+1, y-1:y+1)
+    ncells = view(cs.cells, x-1:x+1, y-1:y+1)
 
     # get current state of (x,y)
     state = get_target_state(ncells)
