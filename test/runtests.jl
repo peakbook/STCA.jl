@@ -1,5 +1,4 @@
 using STCA
-using Compat
 using Base.Test
 
 @test STCA.tostr(0x3031_3233)=="0123"
@@ -20,7 +19,7 @@ d = [
 0xff22ffff 0xeeeeeeee 0xffffff44;
 0xcccccccc 0x11ffffff 0xdddddddd
 ]
-sd = sub(d,1:3,1:3)
+sd = view(d,1:3,1:3)
 @test STCA.qn(sd)==0x33
 @test STCA.qe(sd)==0x44
 @test STCA.qs(sd)==0x11
