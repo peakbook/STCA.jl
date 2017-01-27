@@ -1,12 +1,12 @@
 
 type Rule
-    dict::Dict{UInt64, Tuple{UInt64,UInt64}} # rule dictionary (fin=>(fout,rule_index))
-    states::Array{Tuple{UInt8,UInt}}         # states of partition
-    N::UInt64                                        # num of transition rules
-    Nrot::UInt64                                     # num of transition rules including rotational symmetry
+    dict::Dict{Transition, Tuple{Transition,Index}} # rule dictionary (fin=>(fout,rule_index))
+    states::Array{Tuple{Partition,Count}}   # states of partition
+    N::Count                                # num of transition rules
+    Nrot::Count                             # num of transition rules including rotational symmetry
     function Rule()
-        dict = Dict{UInt64,Tuple{UInt64,UInt64}}()
-        states = Tuple{UInt8,UInt}[]
+        dict = Dict{Transition,Tuple{Transition,Index}}()
+        states = Tuple{Partition,Count}[]
         new(dict,states,0,0)
     end
 end
@@ -48,14 +48,18 @@ function load_rule(lines::Array)
         str = split(line[1:end], ' ')
         fin = toval64(str[1])
         fout = toval64(str[2])
-        add_rule(rule, fin, fout)
+        add_rule!(rule, fin, fout)
     end
-    gen_partition_states_list(rule)
+    gen_partition_states_list!(rule)
 
-    rule
+    return rule
 end
 
-function add_rule(rule::Rule, fin::UInt64, fout::UInt64)
+function get_partition_states_list(rule::Rule)
+    return map(x->x[1], rule.states)
+end
+
+function add_rule!(rule::Rule, fin::Transition, fout::Transition)
    rot_rules = gen_rotational_rule(fin, fout) 
    check_rule_validity(rot_rules)
    has_rotational_rule(rule.dict, rot_rules)
@@ -67,8 +71,8 @@ function add_rule(rule::Rule, fin::UInt64, fout::UInt64)
    rule.N+=1
 end
 
-function gen_rotational_rule(fin::UInt64, fout::UInt64)
-    rot_rules = Tuple{UInt64,UInt64}[]
+function gen_rotational_rule(fin::Transition, fout::Transition)
+    rot_rules = Tuple{Transition,Transition}[]
     push!(rot_rules, (fin,fout))
     for i=1:3
         fin = rotate(fin)
@@ -78,7 +82,7 @@ function gen_rotational_rule(fin::UInt64, fout::UInt64)
     unique(rot_rules)
 end
 
-function check_rule_validity(rot_rules::Array{Tuple{UInt64,UInt64}})
+function check_rule_validity(rot_rules::Array{Tuple{Transition,Transition}})
     fins = unique(map(x->x[1],rot_rules))
     fouts = unique(map(x->x[2],rot_rules))
     if length(fins)<length(fouts)
@@ -86,21 +90,20 @@ function check_rule_validity(rot_rules::Array{Tuple{UInt64,UInt64}})
     end
 end
 
-function has_rotational_rule(dict::Dict, rot_rules::Array{Tuple{UInt,UInt}})
+function has_rotational_rule(dict::Dict, rot_rules::Array{Tuple{Transition,Transition}})
     for rule in rot_rules
         if haskey(dict,rule[1])
-            warn(string("Dup rule: ",tostr(rule[1]),"->",tostr(rule[2])))
+            warn(string("Repeated rule: ",tostr(rule[1]),"->",tostr(rule[2])))
         end
     end
 end
 
-function gen_partition_states_list(rule::Rule)
-    states = Dict{UInt8,UInt}()
+function gen_partition_states_list!(rule::Rule)
+    states = Dict{Partition,Count}()
     for fin in keys(rule.dict)
         fout,ridx = rule.dict[fin]
-        v = (UInt128(fin)<<64)|fout
-        for i=0:8:120
-            p = UInt8((v>>i)&0xff)
+        v = (UInt128(fin) << NBITS_T)|fout
+        for p in reinterpret(Partition, UInt128[v])
             if haskey(states, p)
                 states[p] += 1
             else
@@ -116,17 +119,17 @@ function gen_partition_states_list(rule::Rule)
 end
 
 # 0x11223344_55667788 -> 0x44112233_88556677
-@inline function rotate(val::UInt64)
-    hv = UInt32(val>>32)
-    lv = UInt32(val&0xffff_ffff)
+@inline function rotate(val::Transition)
+    hv = Cell(val >> BSHIFT_CELL)
+    lv = Cell(val & BMASK_C)
     hv = rotate(hv)
     lv = rotate(lv)
-    (UInt64(hv)<<32)|UInt64(lv)
+    (Transition(hv) << BSHIFT_CELL)|Transition(lv)
 end
 
 # 0x11223344 -> 0x44112233
-@inline function rotate(val::UInt32)
-    (val>>8)|((val&0x0000_000ff)<<24)
+@inline function rotate(val::Cell)
+    (val >> NBITS_P)|((val & BMASK_P) << NBITS_P*3)
 end
 
 function show(io::IO, rule::Rule, rotflag::Bool=false)
@@ -135,7 +138,7 @@ function show(io::IO, rule::Rule, rotflag::Bool=false)
             write(io, string(tostr(fin)," ",tostr(rule.dict[fin][1]),"\n"))
         end
     else
-        ruleidx = UInt64[]
+        ruleidx = Transition[]
         for fin in keys(rule.dict)
             if !(rule.dict[fin][2] in ruleidx)
                 write(io, string(tostr(fin)," ",tostr(rule.dict[fin][1]),"\n"))

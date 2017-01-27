@@ -1,24 +1,30 @@
 
-@inline function tostr(val::UInt64)
-    hval = UInt32(val>>32)
-    lval = UInt32(val&0xffff_ffff)
+@inline function tostr(val::Transition)
+    hval = Cell(val >> BSHIFT_CELL)
+    lval = Cell(val & BMASK_C)
     string(tostr(hval),tostr(lval))
 end
 
-@inline function tostr(val::UInt32)
-    string((Char(val>>24)), (Char((val>>16)&0xff)), (Char((val>>8)&0xff)), (Char(val&0xff)))
+@inline function tostr(val::Cell)
+    string((Char((val >> BSHIFT_NORTH) & BMASK_P)),
+           (Char((val >> BSHIFT_EAST) & BMASK_P)),
+           (Char((val >> BSHIFT_SOUTH) & BMASK_P)),
+           (Char((val >> BSHIFT_WEST) & BMASK_P)))
 end
 
 @inline function toval64(str::AbstractString)
-    @assert(length(str)==8, length(str))
+    @assert(length(str)==sizeof(UInt64), length(str))
     hval = toval32(str[1:4])
     lval = toval32(str[5:8])
-    UInt64(hval)<<32|UInt64(lval)
+    Transition(hval) << BSHIFT_CELL|Transition(lval)
 end
 
 @inline function toval32(str::AbstractString)
-    @assert(length(str)==4)
-    UInt32(str[1])<<24|UInt32(str[2])<<16|UInt32(str[3])<<8|UInt32(str[4])
+    @assert(length(str)==sizeof(UInt32))
+    Cell(str[1]) << BSHIFT_NORTH|
+    Cell(str[2]) << BSHIFT_EAST|
+    Cell(str[3]) << BSHIFT_SOUTH|
+    Cell(str[4]) << BSHIFT_WEST
 end
 
 const loadfuncs = Dict(:CellSpace=>load_cell, :Rule=>load_rule)

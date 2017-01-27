@@ -1,13 +1,12 @@
-
 type CellSpace
-    cells::Array{UInt32,2} # cell array
+    cells::Array{Cell,2} # cell array
     width::Integer         # cell space width
     height::Integer        # cell space height
     function CellSpace(w::Integer, h::Integer)
-        cells = zeros(UInt32, w, h)
+        cells = zeros(Cell, w, h)
         new(cells, w, h)
     end
-    function CellSpace(cells::Array{UInt32,2})
+    function CellSpace(cells::Array{Cell,2})
         w = size(cells, 1)
         h = size(cells, 2)
         new(cells, w, h)
@@ -15,63 +14,63 @@ type CellSpace
 end
 
 # 0x11223344 <-> 0xNNEESSWW
-@inline function north(val::UInt32)
-    val>>24
+@inline function north(val::Cell)
+    (val >> BSHIFT_NORTH) & BMASK_P
 end
-@inline function east(val::UInt32)
-    (val>>16)&0x0000_00ff
+@inline function east(val::Cell)
+    (val >> BSHIFT_EAST) & BMASK_P
 end
-@inline function south(val::UInt32)
-    (val>>8)&0x0000_00ff
+@inline function south(val::Cell)
+    (val >> BSHIFT_SOUTH) & BMASK_P
 end
-@inline function west(val::UInt32)
-    val&0x0000_00ff
+@inline function west(val::Cell)
+    (val >> BSHIFT_WEST) & BMASK_P
 end
 
 
-# subarray indices
-# [1][4][7]
-# [2][5][8]
-# [3][6][9]
 @inline function qn(d::SubArray)
-    UInt64(south(d[4]))
+    Transition(south(d[QNORTH_IDX]))
 end
 @inline function qe(d::SubArray)
-    UInt64(west(d[8]))
+    Transition(west(d[QEAST_IDX]))
 end
 @inline function qs(d::SubArray)
-    UInt64(north(d[6]))
+    Transition(north(d[QSOUTH_IDX]))
 end
 @inline function qw(d::SubArray)
-    UInt64(east(d[2]))
+    Transition(east(d[QWEST_IDX]))
 end
 
 
-@inline function qn(d::SubArray, val::UInt32)
-    d[4] = (d[4]&0xffff_00ff)|(val<<8)
+@inline function qn!(d::SubArray, val::Cell)
+    d[QNORTH_IDX] = (d[QNORTH_IDX] & ~BMASK_SOUTH)|(val << BSHIFT_SOUTH)
 end
-@inline function qe(d::SubArray, val::UInt32)
-    d[8] = (d[8]&0xffff_ff00)|(val)
+@inline function qe!(d::SubArray, val::Cell)
+    d[QEAST_IDX] = (d[QEAST_IDX] & ~BMASK_WEST)|(val << BSHIFT_WEST)
 end
-@inline function qs(d::SubArray, val::UInt32)
-    d[6] = (d[6]&0x00ff_ffff)|(val<<24)
+@inline function qs!(d::SubArray, val::Cell)
+    d[QSOUTH_IDX] = (d[QSOUTH_IDX] & ~BMASK_NORTH)|(val << BSHIFT_NORTH)
 end
-@inline function qw(d::SubArray, val::UInt32)
-    d[2] = (d[2]&0xff00_ffff)|(val<<16)
+@inline function qw!(d::SubArray, val::Cell)
+    d[QWEST_IDX] = (d[QWEST_IDX] & ~BMASK_EAST)|(val << BSHIFT_EAST)
 end
 
 function get_target_state(d::SubArray)
-    UInt64(d[5])<<32|qn(d)<<24|qe(d)<<16|qs(d)<<8|qw(d)
+    (Transition(d[TARGET_IDX]) << BSHIFT_CELL) |
+    (qn(d) << BSHIFT_NORTH) |
+    (qe(d) << BSHIFT_EAST) |
+    (qs(d) << BSHIFT_SOUTH) |
+    (qw(d) << BSHIFT_WEST)
 end
 
-function set_target_state(d::SubArray, val::UInt64)
-    hval = UInt32(val>>32)
-    lval = UInt32(val&0xffff_ffff)
-    d[5] = hval
-    qn(d, north(lval))
-    qe(d, east(lval))
-    qs(d, south(lval))
-    qw(d, west(lval))
+function set_target_state(d::SubArray, val::Transition)
+    hval = Cell(val >> BSHIFT_CELL)
+    lval = Cell(val & BMASK_C)
+    d[TARGET_IDX] = hval
+    qn!(d, north(lval))
+    qe!(d, east(lval))
+    qs!(d, south(lval))
+    qw!(d, west(lval))
 end
 
 function update_checkerboard!(cs::CellSpace, rule::Rule)
@@ -108,7 +107,7 @@ function update!(cs::CellSpace, rule::Rule, x::Integer, y::Integer)
     flag
 end
 
-function transition(key::UInt64, rule)
+function transition(key::Transition, rule)
     if haskey(rule.dict, key)
         rule.dict[key][1], true
     else
@@ -127,7 +126,7 @@ function load_cell(fname::AbstractString)
 end
 
 function load_cell(tcells::Array{String,2})
-    if !reduce(&,map(x->ismatch(r"^[0-9a-zA-Z]{4,4}$",x), tcells))
+    if !reduce(&, map(x->ismatch(r"^[0-9a-zA-Z]{4,4}$",x), tcells))
         throw("cell data error.")
     end
     cells = map(toval32, tcells)

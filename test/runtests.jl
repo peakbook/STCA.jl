@@ -28,12 +28,12 @@ sd = view(d,1:3,1:3)
 STCA.set_target_state(sd,0xffffffff_11223344)
 @test STCA.get_target_state(sd)==0xffffffff_11223344
 
-STCA.qn(sd,0x0000_00ff)
+STCA.qn!(sd,0x0000_00ff)
 @test d[4]==0xffff_ffff
-STCA.qe(sd,0x0000_00ff)
+STCA.qe!(sd,0x0000_00ff)
 @test d[8]==0xffff_ffff
-STCA.qs(sd,0x0000_00ff)
+STCA.qs!(sd,0x0000_00ff)
 @test d[6]==0xffff_ffff
-STCA.qw(sd,0x0000_00ff)
+STCA.qw!(sd,0x0000_00ff)
 @test d[2]==0xffff_ffff
 
